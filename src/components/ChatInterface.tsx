@@ -12,6 +12,7 @@ export default function ChatInterface() {
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const isInitialLoad = React.useRef(true);
 
     const fetchConversations = React.useCallback(async () => {
         try {
@@ -60,14 +61,18 @@ export default function ChatInterface() {
                         return mapped;
                     });
 
-                    // Only select first if absolutely nothing selected
-                    if (!currentConversationId && data.conversations.length > 0) {
-                        setCurrentConversationId(data.conversations[0].id.toString());
+                    // Only select first if absolutely nothing selected AND it is the initial load
+                    if (isInitialLoad.current) {
+                        if (!currentConversationId && data.conversations.length > 0) {
+                            setCurrentConversationId(data.conversations[0].id.toString());
+                        }
+                        isInitialLoad.current = false;
                     }
                 }
             }
         } catch (error) {
             console.error('Failed to fetch conversations', error);
+            isInitialLoad.current = false; // Ensure we stop checking after first attempt even if failed
         }
     }, [currentConversationId]); // Added currentConversationId as it is used inside setConversations logic check but mainly we need it stable. Actually setConversations updater doesn't need it. 
     // Wait, line 69 uses currentConversationId. So we need it in deps or use ref.
