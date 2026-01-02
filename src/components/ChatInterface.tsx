@@ -14,7 +14,7 @@ export default function ChatInterface() {
     const [isLoading, setIsLoading] = useState(false);
     const isInitialLoad = React.useRef(true);
 
-    const fetchConversations = React.useCallback(async () => {
+    const fetchConversations = React.useCallback(async (specificId?: string) => {
         try {
             const response = await fetch('https://n8n.srv974225.hstgr.cloud/webhook/get-conversations');
             if (response.ok) {
@@ -58,6 +58,29 @@ export default function ChatInterface() {
                         // we might need to update currentConversationId if it got swapped. 
                         // But usually processMessage handles the ID swap. 
                         // If we are just listing, mapped list is safe.
+
+                        // CRITICAL FIX: Preserve the currently active conversation if it's not in the backend list yet.
+                        // This happens when creating a new chat; backend might be eventual consistent or slow to index,
+                        // causing the new chat to disappear from the sidebar/view.
+
+                        // Use specificId if provided (most accurate after a rename/save), otherwise fallback to current state
+                        const idToPreserve = specificId || currentConversationId;
+
+                        if (idToPreserve) {
+                            const isPresent = mapped.some(c => c.id === idToPreserve);
+                            if (!isPresent) {
+                                // Try to find it in previous state
+                                // Note: If specificId is new (real ID), it might not be in 'prev' with that ID if 'prev' still has Temp ID.
+                                // BUT: setConversations update in processMessage typically happens BEFORE this fetch.
+                                // So 'prev' here likely ALREADY has the swapped/real ID conversation inserted by processMessage.
+                                const currentActive = prev.find(c => c.id === idToPreserve);
+                                if (currentActive) {
+                                    // Prepend it to keep it visible/active
+                                    return [currentActive, ...mapped];
+                                }
+                            }
+                        }
+
                         return mapped;
                     });
 
@@ -241,6 +264,8 @@ export default function ChatInterface() {
 
         setIsLoading(true);
 
+        let resultItem: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
+
         try {
             const formData = new FormData();
             files.forEach((fileAttachment) => {
@@ -273,9 +298,10 @@ export default function ChatInterface() {
             // Determine response type and structure
             let aiContent = "Processed successfully.";
             let messageData = null;
+            // lifted to outer scope for finally block
 
             // Normalize data: if array, use first item; else use data object
-            const resultItem = Array.isArray(data) ? data[0] : data;
+            resultItem = Array.isArray(data) ? data[0] : data;
 
             if (resultItem) {
                 // Check for Search Response (Vector search often returns searchType='vector' and files array)
@@ -390,7 +416,11 @@ export default function ChatInterface() {
         } finally {
             setIsLoading(false);
             // Refresh conversation list to update titles/timestamps
-            fetchConversations();
+            // Pass the correct ID (new real one or existing one) to ensure it is preserved if not yet in list
+            const finalId = (resultItem?.conversation?.id && conversationId !== resultItem.conversation.id.toString())
+                ? resultItem.conversation.id.toString()
+                : conversationId;
+            fetchConversations(finalId);
         }
     };
 
