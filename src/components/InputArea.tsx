@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { Send, Paperclip, X } from 'lucide-react';
+import { Send, Paperclip, XCircle, Mic } from 'lucide-react';
 import { FileAttachment } from '@/types/types';
 import FilePreview from './FilePreview';
 

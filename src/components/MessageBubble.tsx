@@ -1,8 +1,8 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import React from 'react';
 import { Message, SearchResponse, UploadResponse, DocumentResponse } from '@/types/types';
-import FilePreview from './FilePreview';
 import SearchFilesBlock from './SearchFilesBlock';
 import GeneratedDocumentBlock from './GeneratedDocumentBlock';
 import UploadStatusBlock from './UploadStatusBlock';
@@ -69,39 +69,39 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                             <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
                                 components={{
-                                    table: ({ node, ...props }) => (
+                                    table: ({ node: _node, ...props }) => (
                                         <div className="overflow-x-auto my-4 border rounded-lg border-gray-700 bg-gray-800/30">
                                             <table className="min-w-full divide-y divide-gray-700" {...props} />
                                         </div>
                                     ),
-                                    thead: ({ node, ...props }) => (
+                                    thead: ({ node: _node, ...props }) => (
                                         <thead className="bg-gray-800/80" {...props} />
                                     ),
-                                    tbody: ({ node, ...props }) => (
+                                    tbody: ({ node: _node, ...props }) => (
                                         <tbody className="divide-y divide-gray-700 bg-gray-900/20" {...props} />
                                     ),
-                                    tr: ({ node, ...props }) => (
+                                    tr: ({ node: _node, ...props }) => (
                                         <tr className="hover:bg-gray-700/30 transition-colors" {...props} />
                                     ),
-                                    th: ({ node, ...props }) => (
+                                    th: ({ node: _node, ...props }) => (
                                         <th className="px-4 py-3 text-right text-xs font-semibold text-gray-200 uppercase tracking-wider border-b border-gray-600" {...props} />
                                     ),
-                                    td: ({ node, ...props }) => (
+                                    td: ({ node: _node, ...props }) => (
                                         <td className="px-4 py-3 whitespace-normal text-sm text-gray-300" {...props} />
                                     ),
-                                    p: ({ node, ...props }) => (
+                                    p: ({ node: _node, ...props }) => (
                                         <p className="mb-3 last:mb-0 leading-7" {...props} />
                                     ),
-                                    a: ({ node, ...props }) => (
+                                    a: ({ node: _node, ...props }) => (
                                         <a className="text-blue-400 hover:text-blue-300 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />
                                     ),
-                                    ul: ({ node, ...props }) => (
+                                    ul: ({ node: _node, ...props }) => (
                                         <ul className="list-disc list-inside mb-3 space-y-1" {...props} />
                                     ),
-                                    ol: ({ node, ...props }) => (
+                                    ol: ({ node: _node, ...props }) => (
                                         <ol className="list-decimal list-inside mb-3 space-y-1" {...props} />
                                     ),
-                                    code: ({ node, className, children, ...props }: any) => {
+                                    code: ({ node: _node, className, children, ...props }: React.ComponentPropsWithoutRef<'code'> & { node?: unknown }) => {
                                         const match = /language-(\w+)/.exec(className || '')
                                         const isInline = !match && !String(children).includes('\n')
                                         return isInline ? (

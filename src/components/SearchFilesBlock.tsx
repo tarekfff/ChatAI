@@ -1,6 +1,6 @@
 import React from 'react';
-import { FileText, ExternalLink, Download } from 'lucide-react';
-import { SearchResponse, SearchResultFile } from '@/types/types';
+import { ExternalLink, Download } from 'lucide-react';
+import { SearchResponse } from '@/types/types';
 
 interface SearchFilesBlockProps {
     data: SearchResponse;

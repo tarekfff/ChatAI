@@ -7,7 +7,8 @@ interface UploadStatusBlockProps {
 }
 
 const UploadStatusBlock: React.FC<UploadStatusBlockProps> = ({ data }) => {
-    const isSuccess = data.success || data.formatted_response?.includes('✅');
+    // const isSuccess = data.success || data.formatted_response?.includes('✅'); // Unused
+
     const isAlreadyProcessed = data.alreadyProcessed;
 
     // Helper to extract file name if not directly provided
