@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { MessageSquare, Trash2, Plus } from 'lucide-react';
+import { MessageSquare, Trash2, Plus, Pencil, Check, X } from 'lucide-react';
 import { Conversation } from '@/types/types';
 
 interface SidebarProps {
@@ -9,6 +9,7 @@ interface SidebarProps {
     currentConversationId: string | null;
     onSelectConversation: (id: string) => void;
     onNewChat: () => void;
+    onRenameConversation: (id: string, newTitle: string) => void;
     onDeleteConversation: (id: string, e: React.MouseEvent) => void;
     isOpen: boolean;
     onClose: () => void;
@@ -22,10 +23,34 @@ const Sidebar: React.FC<SidebarProps> = ({
     currentConversationId,
     onSelectConversation,
     onNewChat,
+    onRenameConversation,
     onDeleteConversation,
     isOpen,
     onClose
 }) => {
+    const [editingId, setEditingId] = React.useState<string | null>(null);
+    const [editTitle, setEditTitle] = React.useState('');
+
+    const startEditing = (e: React.MouseEvent, id: string, currentTitle: string) => {
+        e.stopPropagation();
+        setEditingId(id);
+        setEditTitle(currentTitle);
+    };
+
+    const cancelEditing = (e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        setEditingId(null);
+        setEditTitle('');
+    };
+
+    const saveEditing = (e: React.MouseEvent | React.FormEvent, id: string) => {
+        e.stopPropagation();
+        if (editTitle.trim()) {
+            onRenameConversation(id, editTitle.trim());
+        }
+        setEditingId(null);
+    };
+
     return (
         <>
             {/* Mobile overlay */}
@@ -83,27 +108,65 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     }}
                                 >
                                     <MessageSquare className="w-4 h-4 flex-shrink-0" />
-                                    <span className="truncate flex-1 pr-6">{conv.title}</span>
+                                    {editingId === conv.id ? (
+                                        <div className="flex items-center flex-1 gap-1 min-w-0 z-20" onClick={e => e.stopPropagation()}>
+                                            <input
+                                                type="text"
+                                                value={editTitle}
+                                                onChange={(e) => setEditTitle(e.target.value)}
+                                                className="flex-1 bg-black/40 border border-gray-600 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-blue-500"
+                                                autoFocus
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') saveEditing(e, conv.id);
+                                                    if (e.key === 'Escape') cancelEditing();
+                                                }}
+                                            />
+                                            <button
+                                                onClick={(e) => saveEditing(e, conv.id)}
+                                                className="p-1 hover:bg-emerald-500/20 text-emerald-400 rounded"
+                                            >
+                                                <Check className="w-3 h-3" />
+                                            </button>
+                                            <button
+                                                onClick={cancelEditing}
+                                                className="p-1 hover:bg-red-500/20 text-red-400 rounded"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <span className="truncate flex-1 pr-16">{conv.title}</span>
 
-                                    {/* Delete button (visible on hover or active) */}
-                                    <button
-                                        onClick={(e) => onDeleteConversation(conv.id, e)}
-                                        className={`
-                      absolute right-2 p-1 rounded hover:bg-red-500/20 hover:text-red-400
-                      transition-opacity
-                      ${currentConversationId === conv.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
-                    `}
-                                        aria-label="Delete conversation"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                            <div className={`
+                                                absolute right-2 flex items-center gap-1
+                                                opacity-0 group-hover:opacity-100 transition-opacity
+                                                ${currentConversationId === conv.id ? 'opacity-100' : ''}
+                                            `}>
+                                                <button
+                                                    onClick={(e) => startEditing(e, conv.id, conv.title)}
+                                                    className="p-1.5 rounded hover:bg-blue-500/20 hover:text-blue-400 transition-colors"
+                                                    title="Rename"
+                                                >
+                                                    <Pencil className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => onDeleteConversation(conv.id, e)}
+                                                    className="p-1.5 rounded hover:bg-red-500/20 hover:text-red-400 transition-colors"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
 
-                                    {/* Gradient fade for long titles */}
-                                    <div className={`
-                    absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l
-                    ${currentConversationId === conv.id ? 'from-[var(--message-user)]' : 'from-[var(--sidebar-bg)] group-hover:from-[#2a2a2a]'}
-                    to-transparent pointer-events-none
-                  `} />
+                                            {/* Gradient fade for long titles - only show when not hovering to avoid covering buttons */}
+                                            <div className={`
+                                                absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l
+                                                ${currentConversationId === conv.id ? 'from-[var(--message-user)]' : 'from-[var(--sidebar-bg)] group-hover:from-[#2a2a2a]'}
+                                                to-transparent pointer-events-none group-hover:opacity-0 transition-opacity
+                                            `} />
+                                        </>
+                                    )}
                                 </div>
                             ))}
                         </>

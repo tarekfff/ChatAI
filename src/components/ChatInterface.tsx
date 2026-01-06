@@ -439,11 +439,64 @@ export default function ChatInterface() {
         }
     };
 
-    const handleDeleteConversation = (id: string, e: React.MouseEvent) => {
+    const handleRenameConversation = async (id: string, newTitle: string) => {
+        // Optimistic update
+        setConversations(prev => prev.map(c =>
+            c.id === id ? { ...c, title: newTitle } : c
+        ));
+
+        const conversation = conversations.find(c => c.id === id);
+        if (conversation && conversation.session_id) {
+            try {
+                const response = await fetch(`https://n8n.srv974225.hstgr.cloud/webhook/98b211e8-1325-4867-a937-9bdaa0f140d2/rename-conversation/${conversation.session_id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: newTitle })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert('Conversation renamed successfully');
+                } else {
+                    alert(`Error: ${data.error || 'Failed to rename conversation'}`);
+                    // Ideally revert optimistic update here
+                }
+            } catch (error) {
+                console.error('Failed to rename conversation', error);
+                alert('Error: Failed to rename conversation. Please check your connection.');
+            }
+        }
+    };
+
+    const handleDeleteConversation = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
+        if (!confirm('Are you sure you want to delete this conversation?')) return;
+
+        const conversation = conversations.find(c => c.id === id);
+
+        // Optimistic delete
         setConversations(prev => prev.filter(c => c.id !== id));
         if (currentConversationId === id) {
             setCurrentConversationId(null);
+        }
+
+        if (conversation && conversation.session_id) {
+            try {
+                const response = await fetch(`https://n8n.srv974225.hstgr.cloud/webhook/98b211e8-1325-4867-a937-9bdaa0f140d2/delete-conversation/${conversation.session_id}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message || 'Conversation deleted');
+                } else {
+                    alert(`Error: ${data.error || 'Failed to delete conversation'}`);
+                    // Should revert state if failed
+                }
+            } catch (error) {
+                console.error('Failed to delete conversation', error);
+                alert('Error: Failed to delete conversation. Please check your connection.');
+            }
         }
     };
 
@@ -454,6 +507,7 @@ export default function ChatInterface() {
                 currentConversationId={currentConversationId}
                 onSelectConversation={setCurrentConversationId}
                 onNewChat={createNewConversation}
+                onRenameConversation={handleRenameConversation}
                 onDeleteConversation={handleDeleteConversation}
                 isOpen={sidebarOpen}
                 onClose={() => setSidebarOpen(false)}
