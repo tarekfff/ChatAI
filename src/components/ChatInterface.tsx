@@ -14,6 +14,16 @@ export default function ChatInterface() {
     const [isLoading, setIsLoading] = useState(false);
     const isInitialLoad = React.useRef(true);
 
+    const generateUUID = () => {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            return crypto.randomUUID();
+        }
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    };
+
     const fetchConversations = React.useCallback(async (specificId?: string) => {
         try {
             const response = await fetch('https://n8n.srv974225.hstgr.cloud/webhook/get-conversations');
@@ -215,17 +225,17 @@ export default function ChatInterface() {
     };
 
     const handleSendMessage = async (content: string, files: FileAttachment[]) => {
-        // If no current conversation, start one (handled in processMessage via existing logic mostly)
-        // But we might need to know if we are in "new" mode
         let activeId = currentConversationId;
+        let activeSessionId: string | undefined = undefined;
 
         if (!activeId) {
-            // Create a temporary ID/Conversation implementation
-            // In a real app, we might wait for backend to give us a session ID first
-            // Or we just generate one. For now, let's keep the existing logic but knowing it might need sync.
             const newId = Date.now().toString();
+            // Generate a proper session ID immediately for the new conversation
+            activeSessionId = `session-${generateUUID()}`;
+
             const newConv: Conversation = {
                 id: newId,
+                session_id: activeSessionId,
                 title: content.slice(0, 30) || 'New Chat',
                 messages: [],
                 createdAt: new Date(),
@@ -236,10 +246,10 @@ export default function ChatInterface() {
             setCurrentConversationId(newId);
         }
 
-        processMessage(activeId, content, files);
+        processMessage(activeId, content, files, activeSessionId);
     };
 
-    const processMessage = async (conversationId: string, content: string, files: FileAttachment[]) => {
+    const processMessage = async (conversationId: string, content: string, files: FileAttachment[], sessionIdOverride?: string) => {
         // Create user message
         const userMessage: Message = {
             id: Date.now().toString(),
@@ -274,8 +284,13 @@ export default function ChatInterface() {
             formData.append('query', content);
 
             const currentConv = conversations.find(c => c.id === conversationId);
-            if (currentConv && currentConv.session_id) {
-                formData.append('session_id', currentConv.session_id);
+            // Use the override if provided (for new chats where state might not be updated yet), otherwise fallback to state
+            const sessionIdToSend = sessionIdOverride || (currentConv ? currentConv.session_id : undefined);
+
+            if (sessionIdToSend) {
+                formData.append('session_id', sessionIdToSend);
+                // Also Send user_id if needed, defaulted
+                formData.append('user_id', 'anonymous');
             }
 
             const response = await fetch('https://n8n.srv974225.hstgr.cloud/webhook/auto-save-files', {
